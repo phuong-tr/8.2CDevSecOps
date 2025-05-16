@@ -1,10 +1,16 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_PROJECT_KEY = 'phuong-tr_8.2CDevSecOps'
+        SONAR_ORGANIZATION = 'phuong-tr'
+        SONAR_TOKEN = credentials('sonarcloud-token')
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/phuong-tr/8.2CDevSecOps.git'
+                git 'https://github.com/phuong-tr/8.2CDevSecOps.git'
             }
         }
 
@@ -31,30 +37,20 @@ pipeline {
                 sh 'npm audit || true'
             }
         }
-    }
-}
 
-stage('SonarCloud Analysis') {
-  steps {
-    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-      sh '''
-        curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-        unzip -o sonar-scanner.zip
-        ./sonar-scanner-*/bin/sonar-scanner
-      '''
-    }
-  }
-}
-
-stage('SonarCloud Analysis') {
-    steps {
-        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-            sh '''
-                curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-                unzip -o sonar-scanner.zip
-                ./sonar-scanner-*/bin/sonar-scanner
-            '''
+        stage('SonarCloud Analysis') {
+            steps {
+                withSonarQubeEnv('SonarCloud') {
+                    sh """
+                    npx sonar-scanner \
+                      -Dsonar.projectKey=${env.SONAR_PROJECT_KEY} \
+                      -Dsonar.organization=${env.SONAR_ORGANIZATION} \
+                      -Dsonar.sources=. \
+                      -Dsonar.host.url=https://sonarcloud.io \
+                      -Dsonar.login=${env.SONAR_TOKEN}
+                    """
+                }
+            }
         }
     }
 }
-
