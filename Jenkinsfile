@@ -34,3 +34,15 @@ pipeline {
     }
 }
 
+stage('SonarCloud Analysis') {
+  steps {
+    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+      sh '''
+        curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+        unzip -o sonar-scanner.zip
+        ./sonar-scanner-*/bin/sonar-scanner
+      '''
+    }
+  }
+}
+
