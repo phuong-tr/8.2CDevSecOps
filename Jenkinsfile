@@ -1,16 +1,26 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout true
+    }
+
     environment {
         SONAR_PROJECT_KEY = 'phuong-tr_8.2CDevSecOps'
         SONAR_ORGANIZATION = 'phuong-tr'
-        SONAR_TOKEN = credentials('sonarcloud-token')
     }
 
     stages {
+
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
         stage('Checkout') {
             steps {
-                git 'https://github.com/phuong-tr/8.2CDevSecOps.git'
+                checkout scm
             }
         }
 
@@ -40,15 +50,16 @@ pipeline {
 
         stage('SonarCloud Analysis') {
             steps {
-                withSonarQubeEnv('SonarCloud') {
-                    sh """
-                    npx sonar-scanner \
-                      -Dsonar.projectKey=${env.SONAR_PROJECT_KEY} \
-                      -Dsonar.organization=${env.SONAR_ORGANIZATION} \
-                      -Dsonar.sources=. \
-                      -Dsonar.host.url=https://sonarcloud.io \
-                      -Dsonar.login=${env.SONAR_TOKEN}
-                    """
+                withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        npm install -g sonarqube-scanner
+                        sonar-scanner \
+                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                          -Dsonar.organization=${SONAR_ORGANIZATION} \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=https://sonarcloud.io \
+                          -Dsonar.login=${SONAR_TOKEN}
+                    '''
                 }
             }
         }
